@@ -8,6 +8,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -20,17 +24,35 @@ public class WebSecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection for simplicity
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/","/register","/login").permitAll() // Allow public access to these endpoints
-                        .anyRequest().authenticated() // Require authentication for all other requests
+                        .anyRequest().authenticated() /// Require authentication for all other requests
                 )
                 .httpBasic(Customizer.withDefaults()); // Enable HTTP Basic authentication
-        // Session management means that the server does not store any session information about the user
+        /// Session management means that the server does not store any session information about the user
         http.sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // Use stateless session management for REST APIs
-        // Disable frame options to allow embedding in iframes (use with caution)
+        /// Disable frame options to allow embedding in iframes (use with caution)
         http.headers(headers -> headers.frameOptions(
                 HeadersConfigurer.FrameOptionsConfig::disable));
-        // Disable CORS for simplicity, enable with proper
+        /// Disable CORS for simplicity, enable with proper
         return http.build();
+    }
+
+
+    /// In-memory user details service for demonstration purposes
+    /// In a real application, use a persistent user store (e.g., database)
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails nahid = User.withUsername("nikhil")
+                .password("{noop}password") // {noop} indicates that no encoding is used
+                .roles("USER")
+                .build();
+
+        UserDetails admin = User.withUsername("admin")
+                .password("{noop}password") // {noop} indicates that no encoding is used
+                .roles("ADMIN")
+                .build();
+        return new InMemoryUserDetailsManager(nahid, admin);
     }
 
 
