@@ -1,5 +1,6 @@
 package com.nahid.userservice.config;// src/main/java/com/example/config/SecurityConfig.java
 
+import com.nahid.userservice.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -40,7 +41,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    //private final JwtAuthenticationFilter jwtAuthFilter;
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
     private final UserDetailsService userDetailsService;
     @Value("${cors.allowed-origins}")
@@ -71,8 +72,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/","/register","/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+
 
                         // Protected endpoints
                         .requestMatchers("/users/**").authenticated()
@@ -87,10 +91,10 @@ public class SecurityConfig {
                 )
 
                 // Set authentication provider
-                .authenticationProvider(authenticationProvider());
+                .authenticationProvider(authenticationProvider())
 
                 // Add JWT filter before UsernamePasswordAuthenticationFilter
-               // .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

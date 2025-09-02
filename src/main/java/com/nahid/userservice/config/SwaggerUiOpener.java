@@ -22,12 +22,12 @@ public class SwaggerUiOpener implements ApplicationListener<ApplicationReadyEven
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         String url = "http://localhost:" + serverPort + swaggerPath;
-        //System.out.println("Swagger UI available at: " + url);
+        System.out.println("Swagger UI available at: " + url);
 
         try {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 Desktop.getDesktop().browse(new URI(url));
-                //System.out.println("Browser opened automatically");
+                System.out.println("Browser opened automatically");
             } else {
                 System.out.println("Auto-opening browser not supported on this platform");
             }

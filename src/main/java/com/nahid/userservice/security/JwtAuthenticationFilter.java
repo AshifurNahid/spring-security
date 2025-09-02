@@ -50,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Skip authentication for auth endpoints
         String requestPath = request.getServletPath();
-        if (requestPath.startsWith("/auth/")) {
+        if (requestPath.startsWith("/auth/" ) ) {
             filterChain.doFilter(request, response);
             return;
         }

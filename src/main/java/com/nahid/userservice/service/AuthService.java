@@ -26,7 +26,6 @@ import java.util.UUID;
 
 /**
  * Authentication Service handling user registration, login, and token refresh.
- *
  * Why @Transactional:
  * - Ensures data consistency during user registration
  * - Rollback on any failure during token operations
@@ -48,7 +47,6 @@ public class AuthService {
 
     /**
      * Registers a new user
-     *
      * What: Creates new user account with encrypted password
      * Why: Secure user onboarding with proper validation
      * How: Validates uniqueness, encrypts password, generates tokens
@@ -105,7 +103,6 @@ public class AuthService {
 
     /**
      * Refreshes access token using refresh token
-     *
      * What: Generates new access and refresh tokens
      * Why: Allows seamless user experience while maintaining security
      * How: Validates refresh token, rotates it, generates new tokens
