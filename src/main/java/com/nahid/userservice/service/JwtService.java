@@ -5,6 +5,7 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
@@ -46,7 +47,9 @@ public class JwtService {
      * Generates access token with user details and custom claims
      */
     public String generateAccessToken(UserDetails userDetails) {
-        return generateAccessToken(new HashMap<>(), userDetails);
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("role", userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
+        return generateAccessToken(extraClaims, userDetails);
     }
 
     public String generateAccessToken(Map<String, Object> extraClaims, UserDetails userDetails) {
@@ -60,10 +63,6 @@ public class JwtService {
         return buildToken(new HashMap<>(), userDetails, refreshTokenExpiration);
     }
 
-    /**
-     * Core token building method
-     */
- // Ensure this for Jwts.SIG (if needed)
 
     private String buildToken(
             Map<String, Object> extraClaims,
@@ -71,7 +70,7 @@ public class JwtService {
             long expiration
     ) {
         return Jwts.builder()
-                .claims(extraClaims)  // Updated to .claims() for 0.12.x consistency (setClaims is deprecated)
+                .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
@@ -123,7 +122,7 @@ public class JwtService {
 
             return Jwts.parser()
                     .verifyWith(signingKey)  // Replacement for setSigningKey()
-                    .setAllowedClockSkewSeconds(clockSkew / 1000)  // Still valid; convert ms to seconds
+                    .clockSkewSeconds(clockSkew) // Still valid; convert ms to seconds
                     .build()
                     .parseSignedClaims(token)  // Replacement for parseClaimsJws()
                     .getPayload();  // Use getPayload() instead of getBody() for consistency in 0.12.x

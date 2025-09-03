@@ -26,15 +26,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Security Configuration for JWT-based stateless authentication
- *
- * Key Design Decisions:
- * - Stateless sessions (no JSESSIONID cookies)
- * - CSRF disabled (not needed for stateless REST APIs)
- * - CORS enabled for cross-origin requests
- * - Method-level security with @PreAuthorize
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -71,10 +62,8 @@ public class SecurityConfig {
                 // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/","/register","/login").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
 
@@ -101,7 +90,7 @@ public class SecurityConfig {
 
     /**
      * Password encoder using BCrypt
-     *
+
      * Why BCrypt:
      * - Adaptive hashing function designed for passwords
      * - Built-in salt generation
@@ -118,8 +107,7 @@ public class SecurityConfig {
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -135,7 +123,6 @@ public class SecurityConfig {
 
     /**
      * CORS configuration
-     *
      * Why CORS is needed:
      * - Browser security policy blocks cross-origin requests by default
      * - Frontend apps (React, Angular) typically run on different ports

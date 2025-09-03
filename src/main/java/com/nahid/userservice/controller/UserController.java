@@ -2,6 +2,11 @@ package com.nahid.userservice.controller;
 
 import com.nahid.userservice.dto.UserResponse;
 import com.nahid.userservice.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,22 +32,20 @@ public class UserController {
 
     private final UserService userService;
 
-    /**
-     * Get current user profile
-
-     * What: Returns authenticated user's profile information
-     * Why: Frontend needs user details for UI personalization
-     * How: Extracts user from Security Context, returns safe user data
-     * When: Called after successful authentication to get user details
-     */
     @GetMapping("/me")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Get current user profile",
+            description = "Retrieve the profile information of the currently authenticated user"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User profile retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
-        log.debug("Fetching profile for user: {}", email);
-
         UserResponse userResponse = userService.getCurrentUser(email);
-
         return ResponseEntity.ok(userResponse);
     }
 }

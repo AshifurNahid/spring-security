@@ -1,12 +1,12 @@
 package com.nahid.userservice.exception;
 
+import com.nahid.userservice.exception.AuthenticationException;
+import com.nahid.userservice.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,26 +14,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
 import java.net.URI;
+import java.nio.file.AccessDeniedException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Global Exception Handler using RFC 7807 Problem Details
- *
- * Why RFC 7807:
- * - Standardized error response format
- * - Machine-readable error details
- * - Consistent error handling across the API
- * - Better client-side error handling
- */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    /**
-     * Handles validation errors from @Valid annotations
-     */
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> handleValidationErrors(
             MethodArgumentNotValidException ex,
@@ -64,10 +54,10 @@ public class GlobalExceptionHandler {
     /**
      * Handles custom authentication exceptions
      */
-    @ExceptionHandler(com.nahid.userservice.exception.AuthenticationException.class)
+    @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ProblemDetail> handleAuthenticationException(
-            AuthenticationException ex,
-            WebRequest request
+            AuthenticationException ex
+
     ) {
         log.debug("Authentication error: {}", ex.getMessage());
 
@@ -85,7 +75,7 @@ public class GlobalExceptionHandler {
     /**
      * Handles Spring Security authentication exceptions
      */
-    @ExceptionHandler({AuthenticationException.class, BadCredentialsException.class})
+    @ExceptionHandler({BadCredentialsException.class})
     public ResponseEntity<ProblemDetail> handleSpringAuthenticationException(
             Exception ex,
             WebRequest request

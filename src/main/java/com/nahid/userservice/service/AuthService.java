@@ -1,9 +1,6 @@
 package com.nahid.userservice.service;
 
-import com.nahid.userservice.dto.AuthRequest;
-import com.nahid.userservice.dto.AuthResponse;
-import com.nahid.userservice.dto.RefreshTokenRequest;
-import com.nahid.userservice.dto.RegisterRequest;
+import com.nahid.userservice.dto.*;
 import com.nahid.userservice.entity.RefreshToken;
 import com.nahid.userservice.entity.User;
 import com.nahid.userservice.enums.Role;
@@ -24,13 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Authentication Service handling user registration, login, and token refresh.
- * Why @Transactional:
- * - Ensures data consistency during user registration
- * - Rollback on any failure during token operations
- * - Manages refresh token cleanup atomically
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -45,18 +35,13 @@ public class AuthService {
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
-    /**
-     * Registers a new user
-     * What: Creates new user account with encrypted password
-     * Why: Secure user onboarding with proper validation
-     * How: Validates uniqueness, encrypts password, generates tokens
-     * When: Called when new users sign up
-     */
+    @Value( "${jwt.access-token-expiration}")
+    private long accessTokenExpiration;
+
     @Transactional
-    public AuthResponse register(RegisterRequest request) throws AuthenticationException {
+    public RegisterResponse register(RegisterRequest request) throws AuthenticationException {
         log.info("Attempting to register user with email: {}", request.getEmail());
 
-        // Check if user already exists
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AuthenticationException("Email already registered");
         }
@@ -73,18 +58,21 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getId());
 
-        // Generate tokens
-        return generateTokenResponse(savedUser);
+        RegisterResponse registerResponse = RegisterResponse.builder()
+                .id(savedUser.getId())
+                .email(savedUser.getEmail())
+                .firstName(savedUser.getFirstName())
+                .lastName(savedUser.getLastName())
+                .role(savedUser.getRole())
+                .build();
+        return registerResponse;
     }
 
-    /**
-     * Authenticates user and returns tokens
-     */
+
     @Transactional
     public AuthResponse login(AuthRequest request) {
         log.info("Attempting login for email: {}", request.getEmail());
 
-        // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -98,16 +86,9 @@ public class AuthService {
         // Revoke existing refresh tokens for security
         refreshTokenRepository.revokeAllByUser(user);
 
-        return generateTokenResponse(user);
+        return generateTokenAndResponse(user);
     }
 
-    /**
-     * Refreshes access token using refresh token
-     * What: Generates new access and refresh tokens
-     * Why: Allows seamless user experience while maintaining security
-     * How: Validates refresh token, rotates it, generates new tokens
-     * When: Called when access token expires
-     */
     @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
         log.info("Attempting token refresh");
@@ -116,7 +97,6 @@ public class AuthService {
                 .findByToken(request.getRefreshToken())
                 .orElseThrow(() -> new AuthenticationException("Invalid refresh token"));
 
-        // Validate refresh token
         if (refreshToken.isRevoked()) {
             log.warn("Attempted use of revoked refresh token");
             throw new AuthenticationException("Refresh token has been revoked");
@@ -129,22 +109,18 @@ public class AuthService {
         }
 
         User user = refreshToken.getUser();
-
-        // Revoke old refresh token (token rotation)
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
-
         log.info("Token refreshed successfully for user: {}", user.getEmail());
-
-        return generateTokenResponse(user);
+        return generateTokenAndResponse(user);
     }
 
     /**
      * Generates complete token response (access + refresh tokens)
      */
-    private AuthResponse generateTokenResponse(User user) {
+    private AuthResponse generateTokenAndResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
-        String refreshTokenValue = generateRefreshTokenValue();
+        String refreshTokenValue = jwtService.generateRefreshToken(user);
 
         // Save refresh token to database
         RefreshToken refreshToken = RefreshToken.builder()
@@ -158,20 +134,11 @@ public class AuthService {
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshTokenValue)
-                .expiresIn(900) // 15 minutes in seconds
+                .tokenType("Bearer")
+                .expiresIn( accessTokenExpiration) // 15 minutes in seconds
                 .build();
     }
 
-    /**
-     * Generates cryptographically secure refresh token
-     */
-    private String generateRefreshTokenValue() {
-        return UUID.randomUUID().toString();
-    }
-
-    /**
-     * Revokes all user's refresh tokens (useful for logout)
-     */
     @Transactional
     public void revokeAllUserTokens(String email) {
         User user = userRepository.findByEmail(email)
