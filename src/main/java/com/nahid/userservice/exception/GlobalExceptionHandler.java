@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
             Exception ex,
             WebRequest request
     ) {
-        log.debug("Spring Security authentication error: {}", ex.getMessage());
+      ///  log.debug("Spring Security authentication error: {}", ex.getMessage());
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED,
