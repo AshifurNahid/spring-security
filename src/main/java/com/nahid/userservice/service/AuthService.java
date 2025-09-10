@@ -58,14 +58,13 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getId());
 
-        RegisterResponse registerResponse = RegisterResponse.builder()
+        return RegisterResponse.builder()
                 .id(savedUser.getId())
                 .email(savedUser.getEmail())
                 .firstName(savedUser.getFirstName())
                 .lastName(savedUser.getLastName())
                 .role(savedUser.getRole())
                 .build();
-        return registerResponse;
     }
 
 

@@ -1,6 +1,9 @@
-package com.nahid.userservice.config;// src/main/java/com/example/config/SecurityConfig.java
+package com.nahid.userservice.config;
 
+import com.nahid.userservice.security.AdvancedPasswordHasher;
+import com.nahid.userservice.security.CustomPasswordEncoder;
 import com.nahid.userservice.security.JwtAuthenticationFilter;
+import com.nahid.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +17,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -34,7 +37,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
 
-    private final UserDetailsService userDetailsService;
+    private final UserService userService;
+
+
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
@@ -47,9 +52,6 @@ public class SecurityConfig {
     @Value("${cors.allow-credentials}")
     private boolean allowCredentials;
 
-    /**
-     * Main security filter chain configuration
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -88,46 +90,34 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Password encoder using BCrypt
-
-     * Why BCrypt:
-     * - Adaptive hashing function designed for passwords
-     * - Built-in salt generation
-     * - Configurable work factor (default 10 rounds)
-     * - Industry standard, resistant to rainbow table attacks
-     */
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
+    public AdvancedPasswordHasher advancedPasswordHasher() {
+        return new AdvancedPasswordHasher();
     }
 
-    /**
-     * Authentication provider configuration
-     */
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        //return new CustomPasswordEncoder(advancedPasswordHasher());
+        // Alternative approach using BCrypt if needed:
+         return new BCryptPasswordEncoder(12);
+    }
+
+
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 
-    /**
-     * Authentication manager bean
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * CORS configuration
-     * Why CORS is needed:
-     * - Browser security policy blocks cross-origin requests by default
-     * - Frontend apps (React, Angular) typically run on different ports
-     * - API needs to explicitly allow cross-origin requests
-     */
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
