@@ -11,9 +11,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-/**
- * User Service implementing UserDetailsService for Spring Security integration
- */
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,9 +19,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    /**
-     * Required by Spring Security for authentication
-     */
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         log.debug("Loading user by username: {}", username);
@@ -32,9 +28,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
-    /**
-     * Gets current user profile
-     */
+
     public UserResponse getCurrentUser(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
