@@ -68,11 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/","/register","/login").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
-
-                        // Protected endpoints
                         .requestMatchers("/users/**").authenticated()
-
-                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
 
@@ -98,9 +94,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        //return new CustomPasswordEncoder(advancedPasswordHasher());
-        // Alternative approach using BCrypt if needed:
-         return new BCryptPasswordEncoder(12);
+        return new CustomPasswordEncoder(advancedPasswordHasher());
+         //return new BCryptPasswordEncoder(12);
     }
 
 
@@ -122,13 +117,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Parse allowed origins from properties
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
         configuration.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));
         configuration.setAllowCredentials(allowCredentials);
 
-        // Allow common headers
         configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

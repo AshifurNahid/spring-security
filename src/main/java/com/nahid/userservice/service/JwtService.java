@@ -15,18 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * JWT Service for token generation, validation, and parsing.
-
- * Why we use HS256:
- * - Symmetric algorithm suitable for single-application scenarios
- * - Faster than RSA for token validation
- * - Simpler key management (single secret vs public/private key pair)
-
- * When to consider RSA256:
- * - Microservices architecture where multiple services need to validate tokens
- * - When you need to distribute public keys for token validation
- */
 @Service
 @Slf4j
 public class JwtService {
@@ -43,9 +31,6 @@ public class JwtService {
     @Value("${jwt.clock-skew:300000}") // 5 minutes default
     private long clockSkew;
 
-    /**
-     * Generates access token with user details and custom claims
-     */
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("role", userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
@@ -56,13 +41,10 @@ public class JwtService {
         return buildToken(extraClaims, userDetails, accessTokenExpiration);
     }
 
-    /**
-     * Generates refresh token (simpler, longer-lived)
-     */
+
     public String generateRefreshToken(UserDetails userDetails) {
         return buildToken(new HashMap<>(), userDetails, refreshTokenExpiration);
     }
-
 
     private String buildToken(
             Map<String, Object> extraClaims,
@@ -77,32 +59,21 @@ public class JwtService {
                 .signWith(getSignInKey())  // Preferred: Infer HS256 from key; assumes getSigningKey() returns SecretKey for HS256
                 .compact();
     }
-    /**
-     * Extracts username from token
-     */
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    /**
-     * Generic claim extraction method
-     */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    /**
-     * Validates token against user details
-     */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
-    /**
-     * Checks if token is expired (with clock skew tolerance)
-     */
     private boolean isTokenExpired(String token) {
         Date expiration = extractExpiration(token);
         // Add clock skew tolerance
@@ -113,9 +84,7 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    /**
-     * Extracts all claims with proper exception handling
-     */
+
     private Claims extractAllClaims(String token) {
         try {
             SecretKey signingKey = getSignInKey();  // Assuming this returns your SecretKey; fix if it's getSignInKey()
@@ -144,17 +113,13 @@ public class JwtService {
         }
     }
 
-    /**
-     * Creates signing key from secret
-     */
+
     private SecretKey getSignInKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /**
-     * Validates token format and signature (doesn't check expiration)
-     */
+
     public boolean isTokenValidFormat(String token) {
         try {
             Jwts.parser()
