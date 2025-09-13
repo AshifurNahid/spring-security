@@ -72,11 +72,10 @@ public class AuthService {
     public AuthResponse login(AuthRequest request) {
         log.info("Attempting login for email: {}", request.getEmail());
 
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(request.getEmail(),
+                        request.getPassword());
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
+                token
         );
 
         User user = (User) authentication.getPrincipal();

@@ -1,8 +1,9 @@
 package com.nahid.userservice.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
-
+import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 public class CustomPasswordEncoder implements PasswordEncoder {
