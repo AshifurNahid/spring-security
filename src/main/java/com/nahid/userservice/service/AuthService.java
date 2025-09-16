@@ -81,7 +81,6 @@ public class AuthService {
         User user = (User) authentication.getPrincipal();
         log.info("User authenticated successfully: {}", user.getEmail());
 
-        // Revoke existing refresh tokens for security
         refreshTokenRepository.revokeAllByUser(user);
 
         return generateTokenAndResponse(user);
@@ -102,25 +101,21 @@ public class AuthService {
 
         if (refreshToken.isExpired()) {
             log.warn("Attempted use of expired refresh token");
-            refreshTokenRepository.delete(refreshToken);
+            refreshTokenRepository.delete(refreshToken); // Delete instead of keeping
             throw new AuthenticationException("Refresh token has expired");
         }
 
         User user = refreshToken.getUser();
-        refreshToken.setRevoked(true);
-        refreshTokenRepository.save(refreshToken);
+        refreshTokenRepository.delete(refreshToken);
         log.info("Token refreshed successfully for user: {}", user.getEmail());
         return generateTokenAndResponse(user);
     }
 
-    /**
-     * Generates complete token response (access + refresh tokens)
-     */
+
     private AuthResponse generateTokenAndResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshTokenValue = jwtService.generateRefreshToken(user);
 
-        // Save refresh token to database
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(refreshTokenValue)
                 .user(user)
@@ -144,5 +139,28 @@ public class AuthService {
 
         refreshTokenRepository.revokeAllByUser(user);
         log.info("All refresh tokens revoked for user: {}", email);
+    }
+
+    @Transactional
+    public LogoutResponse logout(LogoutRequest request) {
+        log.info("Attempting logout with refresh token");
+
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByToken(request.getRefreshToken())
+                .orElseThrow(() -> new AuthenticationException("Invalid refresh token"));
+
+        if (refreshToken.isRevoked()) {
+            log.warn("Attempted logout with already revoked refresh token");
+            throw new AuthenticationException("Refresh token has already been revoked");
+        }
+
+        refreshTokenRepository.delete(refreshToken);
+
+        log.info("User logged out successfully: {}", refreshToken.getUser().getEmail());
+
+        return LogoutResponse.builder()
+                .message("Logged out successfully")
+                .success(true)
+                .build();
     }
 }

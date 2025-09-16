@@ -87,14 +87,14 @@ public class JwtService {
 
     private Claims extractAllClaims(String token) {
         try {
-            SecretKey signingKey = getSignInKey();  // Assuming this returns your SecretKey; fix if it's getSignInKey()
+            SecretKey signingKey = getSignInKey();
 
             return Jwts.parser()
-                    .verifyWith(signingKey)  // Replacement for setSigningKey()
-                    .clockSkewSeconds(clockSkew) // Still valid; convert ms to seconds
+                    .verifyWith(signingKey)
+                    .clockSkewSeconds(clockSkew)
                     .build()
-                    .parseSignedClaims(token)  // Replacement for parseClaimsJws()
-                    .getPayload();  // Use getPayload() instead of getBody() for consistency in 0.12.x
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (ExpiredJwtException e) {
             log.debug("JWT token is expired: {}", e.getMessage());
             throw e;
@@ -104,7 +104,7 @@ public class JwtService {
         } catch (MalformedJwtException e) {
             log.error("JWT token is malformed: {}", e.getMessage());
             throw e;
-        } catch (SignatureException e) {  // Updated to catch the new signature exception
+        } catch (SignatureException e) {
             log.error("JWT signature validation failed: {}", e.getMessage());
             throw e;
         } catch (IllegalArgumentException e) {

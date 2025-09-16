@@ -69,4 +69,20 @@ public class AuthController {
         AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/logout")
+    @Operation(
+            summary = "Logout user",
+            description = "Revoke the refresh token to logout the user"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful",
+                    content = @Content(schema = @Schema(implementation = LogoutResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid or already revoked refresh token"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
+    })
+    public ResponseEntity<LogoutResponse> logout(@Valid @RequestBody LogoutRequest request) {
+        LogoutResponse response = authService.logout(request);
+        return ResponseEntity.ok(response);
+    }
 }
