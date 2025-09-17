@@ -5,9 +5,9 @@ import com.nahid.userservice.entity.RefreshToken;
 import com.nahid.userservice.entity.User;
 import com.nahid.userservice.enums.Role;
 import com.nahid.userservice.exception.AuthenticationException;
-import com.nahid.userservice.exception.ResourceNotFoundException;
 import com.nahid.userservice.repository.RefreshTokenRepository;
 import com.nahid.userservice.repository.UserRepository;
+import com.nahid.userservice.util.contant.ExceptionMessageConstant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -43,10 +42,9 @@ public class AuthService {
         log.info("Attempting to register user with email: {}", request.getEmail());
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AuthenticationException("Email already registered");
+            throw new AuthenticationException(ExceptionMessageConstant.EMAIL_ALREADY_REGISTERED);
         }
 
-        // Create new user
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -67,7 +65,6 @@ public class AuthService {
                 .build();
     }
 
-
     @Transactional
     public AuthResponse login(AuthRequest request) {
         log.info("Attempting login for email: {}", request.getEmail());
@@ -77,40 +74,41 @@ public class AuthService {
         Authentication authentication = authenticationManager.authenticate(
                 token
         );
-
         User user = (User) authentication.getPrincipal();
         log.info("User authenticated successfully: {}", user.getEmail());
-
-        refreshTokenRepository.revokeAllByUser(user);
 
         return generateTokenAndResponse(user);
     }
 
     @Transactional
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
-        log.info("Attempting token refresh");
+    public AuthResponse refreshToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Refresh token is missing");
+        }
+        String token = authHeader.substring(7);
 
         RefreshToken refreshToken = refreshTokenRepository
-                .findByToken(request.getRefreshToken())
-                .orElseThrow(() -> new AuthenticationException("Invalid refresh token"));
+                .findByToken(token)
+                .orElseThrow(() -> new AuthenticationException(ExceptionMessageConstant.INVALID_REFRESH_TOKEN));
 
         if (refreshToken.isRevoked()) {
             log.warn("Attempted use of revoked refresh token");
-            throw new AuthenticationException("Refresh token has been revoked");
+            throw new AuthenticationException(ExceptionMessageConstant.REFRESH_TOKEN_REVOKED);
         }
 
         if (refreshToken.isExpired()) {
             log.warn("Attempted use of expired refresh token");
-            refreshTokenRepository.delete(refreshToken); // Delete instead of keeping
-            throw new AuthenticationException("Refresh token has expired");
+            refreshTokenRepository.delete(refreshToken);
+            throw new AuthenticationException(ExceptionMessageConstant.REFRESH_TOKEN_EXPIRED);
         }
 
         User user = refreshToken.getUser();
+
         refreshTokenRepository.delete(refreshToken);
+
         log.info("Token refreshed successfully for user: {}", user.getEmail());
         return generateTokenAndResponse(user);
     }
-
 
     private AuthResponse generateTokenAndResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
@@ -128,39 +126,9 @@ public class AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshTokenValue)
                 .tokenType("Bearer")
-                .expiresIn( accessTokenExpiration) // 15 minutes in seconds
+                .expiresIn(accessTokenExpiration) // 15 minutes in seconds
                 .build();
     }
 
-    @Transactional
-    public void revokeAllUserTokens(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        refreshTokenRepository.revokeAllByUser(user);
-        log.info("All refresh tokens revoked for user: {}", email);
-    }
-
-    @Transactional
-    public LogoutResponse logout(LogoutRequest request) {
-        log.info("Attempting logout with refresh token");
-
-        RefreshToken refreshToken = refreshTokenRepository
-                .findByToken(request.getRefreshToken())
-                .orElseThrow(() -> new AuthenticationException("Invalid refresh token"));
-
-        if (refreshToken.isRevoked()) {
-            log.warn("Attempted logout with already revoked refresh token");
-            throw new AuthenticationException("Refresh token has already been revoked");
-        }
-
-        refreshTokenRepository.delete(refreshToken);
-
-        log.info("User logged out successfully: {}", refreshToken.getUser().getEmail());
-
-        return LogoutResponse.builder()
-                .message("Logged out successfully")
-                .success(true)
-                .build();
-    }
 }

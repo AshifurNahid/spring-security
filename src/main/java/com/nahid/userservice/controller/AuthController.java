@@ -2,16 +2,15 @@ package com.nahid.userservice.controller;
 
 import com.nahid.userservice.dto.*;
 import com.nahid.userservice.service.AuthService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import com.nahid.userservice.service.UserService;
+import com.nahid.userservice.util.helper.ApiResponseUtil;
+import com.nahid.userservice.util.contant.ApiResponseConstant;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,68 +20,26 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
 
     @PostMapping("/register")
-    @Operation(
-            summary = "Register a new user",
-            description = "Create a new user account. User needs to login separately to get tokens."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User registered successfully",
-                    content = @Content(schema = @Schema(implementation = RegisterResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "409", description = "Email already exists")
-    })
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        RegisterResponse response = authService.register(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        return ApiResponseUtil.success(authService.register(request), ApiResponseConstant.USER_REGISTERED_SUCCESSFULLY, HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
-    @Operation(
-            summary = "Authenticate user",
-            description = "Authenticate user with email and password, return authentication tokens"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Authentication successful",
-                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid credentials"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data")
-    })
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest request) {
+        return ApiResponseUtil.success(authService.login(request), ApiResponseConstant.LOGIN_SUCCESSFUL);
     }
 
     @PostMapping("/refresh")
-    @Operation(
-            summary = "Refresh access token",
-            description = "Use refresh token to get a new access token and refresh token"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token refreshed successfully",
-                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data")
-    })
-    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        AuthResponse response = authService.refreshToken(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@RequestHeader("Authorization") String authHeader) {
+        return ApiResponseUtil.success(authService.refreshToken(authHeader), ApiResponseConstant.TOKEN_REFRESHED_SUCCESSFULLY);
     }
 
     @PostMapping("/logout")
-    @Operation(
-            summary = "Logout user",
-            description = "Revoke the refresh token to logout the user"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Logout successful",
-                    content = @Content(schema = @Schema(implementation = LogoutResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid or already revoked refresh token"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data")
-    })
-    public ResponseEntity<LogoutResponse> logout(@Valid @RequestBody LogoutRequest request) {
-        LogoutResponse response = authService.logout(request);
-        return ResponseEntity.ok(response);
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<LogoutResponse>> logout(@RequestHeader("Authorization") String authHeader) {
+        return ApiResponseUtil.success(userService.logout(authHeader), ApiResponseConstant.LOGOUT_SUCCESSFUL);
     }
 }
