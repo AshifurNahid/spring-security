@@ -7,9 +7,9 @@ A production-grade Spring Boot 3.5.3 REST API with JWT authentication, built wit
 - ✅ **JWT Authentication** with access & refresh tokens
 - ✅ **Spring Security 6.x** with stateless configuration
 - ✅ **Token Rotation** - refresh tokens are rotated on each refresh
-- ✅ **BCrypt Password Encoding** (strength 12)
+- ✅ **BCrypt Password Encoding** (strength 12) + **Custom Password Encoding**
 - ✅ **Input Validation** with Bean Validation
-- ✅ **RFC 7807 Error Responses** with proper HTTP status codes
+- ✅ **Error Responses** with proper HTTP status codes
 - ✅ **CORS Support** with configurable origins
 - ✅ **Method-level Security** with `@PreAuthorize`
 - ✅ **PostgreSQL Database** with JPA/Hibernate
