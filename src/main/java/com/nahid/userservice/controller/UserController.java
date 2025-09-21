@@ -1,7 +1,7 @@
 package com.nahid.userservice.controller;
 
-import com.nahid.userservice.dto.ApiResponse;
-import com.nahid.userservice.dto.UserResponse;
+import com.nahid.userservice.dto.response.ApiResponse;
+import com.nahid.userservice.dto.response.UserResponse;
 import com.nahid.userservice.service.UserService;
 import com.nahid.userservice.util.helper.ApiResponseUtil;
 import com.nahid.userservice.util.contant.ApiResponseConstant;

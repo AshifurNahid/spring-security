@@ -41,23 +41,26 @@ A production-grade Spring Boot 3.5.3 REST API with JWT authentication, built wit
 ### Database Setup
 
 ```sql
-CREATE DATABASE jwt_auth_db;
-CREATE USER jwt_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE jwt_auth_db TO jwt_user;
+CREATE DATABASE postgres;
+CREATE USER alibou WITH PASSWORD 'alibou';
+GRANT ALL PRIVILEGES ON DATABASE postgres TO alibou;
 ```
 
 ### Environment Variables
 
 ```bash
-# Database
-DB_USERNAME=jwt_user
-DB_PASSWORD=your_password
+# Database (defaults if not set)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=postgres
+DB_USERNAME=alibou
+DB_PASSWORD=alibou
 
-# JWT (Generate a secure 256-bit key)
-JWT_SECRET=your_jwt_secret_key_here
+# JWT (configured in application.properties)
+JWT_SECRET=Qw8vZ2pLr9sT1uXy4zB7cV6nP0eR5aS3dF8hJ2kL6mN1qW4tU
 
 # CORS
-CORS_ORIGINS=http://localhost:3000,http://localhost:4200
+CORS_ORIGINS=http://localhost:3000,http://localhost:8080
 ```
 
 ### Run the Application
@@ -76,6 +79,7 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:4200
 | POST | `/api/auth/register` | Register new user | No |
 | POST | `/api/auth/login` | Login user | No |
 | POST | `/api/auth/refresh` | Refresh access token | No |
+| POST | `/api/auth/logout` | Logout user | Yes |
 
 ### User Management
 
@@ -101,10 +105,15 @@ curl -X POST http://localhost:8080/api/auth/register \
 **Response:**
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
-  "tokenType": "Bearer",
-  "expiresIn": 900000
+  "success": true,
+  "message": "User registered successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
+    "tokenType": "Bearer",
+    "expiresIn": 900000
+  },
+  "timestamp": "2024-01-01T10:00:00.000Z"
 }
 ```
 
@@ -119,6 +128,21 @@ curl -X POST http://localhost:8080/api/auth/login \
   }'
 ```
 
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
+    "tokenType": "Bearer",
+    "expiresIn": 900000
+  },
+  "timestamp": "2024-01-01T10:00:00.000Z"
+}
+```
+
 ### Get Current User
 
 ```bash
@@ -129,13 +153,18 @@ curl -X GET http://localhost:8080/api/users/me \
 **Response:**
 ```json
 {
-  "id": 1,
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john.doe@example.com",
-  "role": "USER",
-  "createdAt": "2024-01-01T10:00:00",
-  "updatedAt": "2024-01-01T10:00:00"
+  "success": true,
+  "message": "User profile fetched",
+  "data": {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "role": "USER",
+    "createdAt": "2024-01-01T10:00:00",
+    "updatedAt": "2024-01-01T10:00:00"
+  },
+  "timestamp": "2024-01-01T10:00:00.000Z"
 }
 ```
 
@@ -143,10 +172,41 @@ curl -X GET http://localhost:8080/api/users/me \
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refreshToken": "550e8400-e29b-41d4-a716-446655440000"
-  }'
+  -H "Authorization: Bearer YOUR_REFRESH_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Token refreshed successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
+    "tokenType": "Bearer",
+    "expiresIn": 900000
+  },
+  "timestamp": "2024-01-01T10:00:00.000Z"
+}
+```
+
+### Logout
+
+```bash
+curl -X POST http://localhost:8080/api/auth/logout \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Logout successful",
+  "data": {
+    "message": "Successfully logged out"
+  },
+  "timestamp": "2024-01-01T10:00:00.000Z"
+}
 ```
 
 ## Security Configuration
@@ -161,7 +221,7 @@ curl -X POST http://localhost:8080/api/auth/refresh \
 
 ### Password Security
 
-- **Encoding:** BCrypt with strength 12
+- **Encoding:** BCrypt with strength 12 + Custom Password Encoding
 - **Minimum Length:** 8 characters
 - **Maximum Length:** 128 characters
 
@@ -170,20 +230,21 @@ curl -X POST http://localhost:8080/api/auth/refresh \
 Configure allowed origins in `application.properties`:
 
 ```properties
-app.cors.allowed-origins=http://localhost:3000,http://localhost:4200
+cors.allowed-origins=http://localhost:3000,http://localhost:8080
+cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
+cors.allowed-headers=*
+cors.allow-credentials=true
 ```
 
 ## Error Handling
 
-The API returns RFC 7807 compliant error responses:
+The API returns standardized error responses with ApiResponse wrapper:
 
 ```json
 {
-  "type": "about:blank",
-  "title": "Validation Failed",
-  "status": 400,
-  "detail": "Request validation failed",
-  "instance": "/api/auth/register",
+  "success": false,
+  "message": "Validation Failed",
+  "data": null,
   "timestamp": "2024-01-01T10:00:00.000Z",
   "errors": [
     {
@@ -197,26 +258,117 @@ The API returns RFC 7807 compliant error responses:
 
 ## Documentation
 
-- **Swagger UI:** http://localhost:8080/swagger-ui.html
-- **OpenAPI Docs:** http://localhost:8080/api-docs
+- **Swagger UI:** http://localhost:8080/swagger-ui/index.html
+- **OpenAPI Docs:** http://localhost:8080/v3/api-docs
 
 ## Configuration
 
 Key configuration properties in `application.properties`:
 
 ```properties
+# Server Configuration
+server.port=8080
+
+# Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+spring.datasource.username=alibou
+spring.datasource.password=alibou
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# HikariCP Connection Pool
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.connection-timeout=20000
+spring.datasource.hikari.max-lifetime=1800000
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
 # JWT Configuration
-app.jwt.secret=${JWT_SECRET}
-app.jwt.access-token-expiration=900000
-app.jwt.refresh-token-expiration=604800000
+jwt.secret=Qw8vZ2pLr9sT1uXy4zB7cV6nP0eR5aS3dF8hJ2kL6mN1qW4tU
+jwt.access-token-expiration=900000
+jwt.refresh-token-expiration=604800000
+jwt.clock-skew=300000
 
-# Database
-spring.datasource.url=jdbc:postgresql://localhost:5432/jwt_auth_db
-spring.datasource.username=${DB_USERNAME:postgres}
-spring.datasource.password=${DB_PASSWORD:password}
+# Scheduled Cleanup (Daily at midnight)
+app.refresh-token.cleanup.cron=0 0 0 * * *
 
-# CORS
-app.cors.allowed-origins=${CORS_ORIGINS:http://localhost:3000}
+# CORS Configuration
+cors.allowed-origins=${CORS_ORIGINS:http://localhost:3000,http://localhost:8080}
+cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
+cors.allowed-headers=*
+cors.allow-credentials=true
+
+# Swagger Configuration
+springdoc.swagger-ui.path=/swagger-ui/index.html
+```
+
+## Project Structure
+
+```
+src/
+├── main/
+│   ├── java/
+│   │   └── com/
+│   │       └── nahid/
+│   │           └── userservice/
+│   │               ├── UserServiceApplication.java
+│   │               ├── config/
+│   │               │   ├── OpenApiConfig.java
+│   │               │   ├── SecurityConfig.java
+│   │               │   └── SwaggerUiOpener.java
+│   │               ├── controller/
+│   │               │   ├── AuthController.java
+│   │               │   └── UserController.java
+│   │               ├── dto/
+│   │               │   ├── ApiResponse.java
+│   │               │   ├── AuthRequest.java
+│   │               │   ├── AuthResponse.java
+│   │               │   ├── LogoutRequest.java
+│   │               │   ├── LogoutResponse.java
+│   │               │   ├── RefreshTokenRequest.java
+│   │               │   ├── RegisterRequest.java
+│   │               │   ├── RegisterResponse.java
+│   │               │   └── UserResponse.java
+│   │               ├── entity/
+│   │               │   ├── RefreshToken.java
+│   │               │   └── User.java
+│   │               ├── enums/
+│   │               │   └── Role.java
+│   │               ├── exception/
+│   │               │   ├── AuthenticationException.java
+│   │               │   ├── GlobalExceptionHandler.java
+│   │               │   └── ResourceNotFoundException.java
+│   │               ├── repository/
+│   │               │   ├── RefreshTokenRepository.java
+│   │               │   └── UserRepository.java
+│   │               ├── security/
+│   │               │   ├── AdvancedPasswordHasher.java
+│   │               │   ├── CustomPasswordEncoder.java
+│   │               │   └── JwtAuthenticationFilter.java
+│   │               ├── service/
+│   │               │   ├── AuthService.java
+│   │               │   ├── JwtService.java
+│   │               │   ├── RefreshTokenCleanupService.java
+│   │               │   └── UserService.java
+│   │               └── util/
+│   │                   ├── contant/
+│   │                   │   ├── ApiResponseConstant.java
+│   │                   │   ├── AppConstant.java
+│   │                   │   └── ExceptionMessageConstant.java
+│   │                   └── helper/
+│   │                       └── ApiResponseUtil.java
+│   └── resources/
+│       └── application.properties
+└── test/
+    └── java/
+        └── com/
+            └── nahid/
+                └── userservice/
+                    └── UserServiceApplicationTests.java
 ```
 
 ## Production Deployment
@@ -231,20 +383,24 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_USERNAME=jwt_user
-      - DB_PASSWORD=secure_password
-      - JWT_SECRET=your_production_jwt_secret
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=alibou
+      - SPRING_DATASOURCE_PASSWORD=alibou
+      - JWT_SECRET=your_production_jwt_secret_here
+      - CORS_ORIGINS=https://yourdomain.com
     depends_on:
       - db
       
   db:
     image: postgres:15
     environment:
-      - POSTGRES_DB=jwt_auth_db
-      - POSTGRES_USER=jwt_user
-      - POSTGRES_PASSWORD=secure_password
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=alibou
+      - POSTGRES_PASSWORD=alibou
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
 volumes:
   postgres_data:
@@ -255,7 +411,7 @@ volumes:
 1. **Use strong JWT secrets** (256+ bit)
 2. **Enable HTTPS** in production
 3. **Configure proper CORS** origins
-4. **Use connection pooling** for database
+4. **Use connection pooling** for database (HikariCP configured)
 5. **Enable rate limiting**
 6. **Monitor and log** security events
 7. **Regularly rotate** JWT secrets

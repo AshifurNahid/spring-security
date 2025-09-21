@@ -1,6 +1,6 @@
 package com.nahid.userservice.util.helper;
 
-import com.nahid.userservice.dto.ApiResponse;
+import com.nahid.userservice.dto.response.ApiResponse;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.nahid.userservice.dto;
+package com.nahid.userservice.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

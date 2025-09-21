@@ -1,7 +1,7 @@
 package com.nahid.userservice.service;
 
-import com.nahid.userservice.dto.LogoutResponse;
-import com.nahid.userservice.dto.UserResponse;
+import com.nahid.userservice.dto.response.LogoutResponse;
+import com.nahid.userservice.dto.response.UserResponse;
 import com.nahid.userservice.entity.RefreshToken;
 import com.nahid.userservice.entity.User;
 import com.nahid.userservice.exception.AuthenticationException;

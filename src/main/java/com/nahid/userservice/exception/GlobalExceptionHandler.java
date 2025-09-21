@@ -1,6 +1,6 @@
 package com.nahid.userservice.exception;
 
-import com.nahid.userservice.dto.ApiResponse;
+import com.nahid.userservice.dto.response.ApiResponse;
 import com.nahid.userservice.util.helper.ApiResponseUtil;
 import com.nahid.userservice.util.contant.ExceptionMessageConstant;
 import lombok.extern.slf4j.Slf4j;

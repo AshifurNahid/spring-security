@@ -1,6 +1,9 @@
 package com.nahid.userservice.service;
 
-import com.nahid.userservice.dto.*;
+import com.nahid.userservice.dto.request.AuthRequest;
+import com.nahid.userservice.dto.request.RegisterRequest;
+import com.nahid.userservice.dto.response.AuthResponse;
+import com.nahid.userservice.dto.response.RegisterResponse;
 import com.nahid.userservice.entity.RefreshToken;
 import com.nahid.userservice.entity.User;
 import com.nahid.userservice.enums.Role;

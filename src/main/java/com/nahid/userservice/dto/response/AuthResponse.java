@@ -1,4 +1,4 @@
-package com.nahid.userservice.dto;
+package com.nahid.userservice.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
